@@ -1,4 +1,4 @@
-package com.fdse.padbotnavigationcontrolapp.controller;
+package com.fdse.padbotnavigationcontrolapp.service;
 
 import android.os.RemoteException;
 
@@ -10,7 +10,7 @@ import cn.inbot.componentnavigation.domain.ActionReturn;
 import cn.inbot.componentnavigation.domain.RobotTargetPointVo;
 import cn.inbot.navigationlib.PadBotNavigationClient;
 
-public class RelocationController {
+public class RelocationService {
 
     /**
      * 派宝机器人在开机后的第一次导航前，使用这个函数告诉机器人它的大概位置（给机器人定位）。
@@ -21,7 +21,7 @@ public class RelocationController {
      * @param req RelocationRequest
      * @return RelocationResponse
      */
-    public RelocationResponse handleRelocationRequest(RelocationRequest req) throws RemoteException {
+    public RelocationResponse relocation(RelocationRequest req) throws RemoteException {
         String relocationPointName = req.getRelocationPoint();
         if (relocationPointName == null) {
             throw new RuntimeException("relocationPoint cannot be null");

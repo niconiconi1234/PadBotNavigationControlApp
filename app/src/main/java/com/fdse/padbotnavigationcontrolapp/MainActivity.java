@@ -9,20 +9,25 @@ import com.fdse.padbotnavigationcontrolapp.bind.NavigationRequest;
 import com.fdse.padbotnavigationcontrolapp.bind.NavigationResponse;
 import com.fdse.padbotnavigationcontrolapp.bind.RelocationRequest;
 import com.fdse.padbotnavigationcontrolapp.bind.RelocationResponse;
-import com.fdse.padbotnavigationcontrolapp.controller.NavigationController;
-import com.fdse.padbotnavigationcontrolapp.controller.RelocationController;
+import com.fdse.padbotnavigationcontrolapp.service.NavigationService;
+import com.fdse.padbotnavigationcontrolapp.service.RelocationService;
+import com.fdse.padbotnavigationcontrolapp.eventhandler.BatteryInfoEventHandler;
+import com.fdse.padbotnavigationcontrolapp.service.RobotStatusService;
 import com.koushikdutta.async.http.server.AsyncHttpServer;
 import com.koushikdutta.async.http.server.AsyncHttpServerRequest;
 
-import java.util.HashMap;
 import java.util.concurrent.CompletableFuture;
 
 import cn.inbot.navigationlib.PadBotNavigationClient;
+import cn.inbot.padbotbasesdk.RobotManager;
 
 public class MainActivity extends AppCompatActivity {
 
-    private final NavigationController navigationController = new NavigationController();
-    private final RelocationController relocationController = new RelocationController();
+    private final NavigationService navigationService = new NavigationService();
+    private final RelocationService relocationService = new RelocationService();
+    private final BatteryInfoEventHandler batteryInfoEventHandler = new BatteryInfoEventHandler();
+    private final RobotStatusService robotStatusService = new RobotStatusService(batteryInfoEventHandler, navigationService);
+
     private final AsyncHttpServer server = new AsyncHttpServer();
 
     public static final String APPLICATION_JSON = "application/json";
@@ -32,12 +37,17 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        startHttpServer();
         initNavigation();
+        initRobotManager();
+        startHttpServer();
     }
 
     private void initNavigation() {
         PadBotNavigationClient.getInstance().connect(getApplicationContext()); // 连接导航
+    }
+
+    private void initRobotManager() {
+        RobotManager.getInstance().init(getApplicationContext());
     }
 
     private void startHttpServer() {
@@ -45,7 +55,7 @@ public class MainActivity extends AppCompatActivity {
             CompletableFuture.runAsync(() -> {
                 try {
                     NavigationRequest req = parseHttpBodyJsonObject(asyncHttpServerRequest, NavigationRequest.class); // 解析请求
-                    NavigationResponse rsp = navigationController.handleNavigationRequest(req); // 处理导航请求
+                    NavigationResponse rsp = navigationService.navigation(req); // 处理导航请求
                     asyncHttpServerResponse.send(APPLICATION_JSON, JSON.toJSONString(rsp));
                 } catch (Exception e) {
                     NavigationResponse rsp = new NavigationResponse(false, e.getMessage());
@@ -57,7 +67,7 @@ public class MainActivity extends AppCompatActivity {
             CompletableFuture.runAsync(() -> {
                 try {
                     RelocationRequest req = parseHttpBodyJsonObject(asyncHttpServerRequest, RelocationRequest.class);
-                    RelocationResponse rsp = relocationController.handleRelocationRequest(req);
+                    RelocationResponse rsp = relocationService.relocation(req);
                     asyncHttpServerResponse.send(APPLICATION_JSON, JSON.toJSONString(rsp));
                 } catch (Exception e) {
                     RelocationResponse rsp = new RelocationResponse(false, e.getMessage());
@@ -65,6 +75,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
         });
+        server.get("/status", (asyncHttpServerRequest, asyncHttpServerResponse) -> CompletableFuture.runAsync(() -> asyncHttpServerResponse.send(APPLICATION_JSON, JSON.toJSONString(robotStatusService.status()))));
         new Thread(() -> {
             server.listen(5000);
         }).start();

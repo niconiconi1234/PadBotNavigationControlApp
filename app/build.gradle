@@ -9,7 +9,7 @@ android {
     defaultConfig {
         applicationId "com.fdse.padbotnavigationcontrolapp"
         minSdk 27
-        targetSdk 33
+        targetSdk 27
         versionCode 1
         versionName "1.0"
 
@@ -40,4 +40,6 @@ dependencies {
     implementation 'com.alibaba.fastjson2:fastjson2:2.0.34'
     api 'org.greenrobot:eventbus:3.1.1'
     api files('libs/RobotNavigationSDK.jar')
+    api files('libs/RobotBaseSDK-1.11.0.jar')
+    api files('libs/RobotSerialPort-1.1.0.jar')
 }
